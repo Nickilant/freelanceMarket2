@@ -51,7 +51,7 @@ async def order_description(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     context.user_data['order_description'] = update.message.text
     
     await update.message.reply_text(
-        "💰 Укажите бюджет (число):\n\n"
+        "💰 Укажите бюджет (число) в USDT или TON:\n\n"
         "Например: 100"
     )
     
@@ -846,10 +846,9 @@ async def accept_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📋 <b>Следующие шаги:</b>\n"
         f"1. Исполнитель начинает работу\n"
         f"2. После выполнения исполнитель сдает работу\n"
-        f"3. Вы проверяете работу\n"
-        f"4. Если все ОК - оплачиваете\n"
+        f"3. Вы Оплачиваете заказ. Деньги замораживаются на эскроу\n"
+        f"4. Проверяете работу, если все ОК - подтверждаете выполнение\n"
         f"5. Исполнитель получает средства\n\n"
-        f"⚠️ <b>Важно:</b> Оплата происходит ПОСЛЕ сдачи и проверки работы.\n\n"
         f"💬 Свяжитесь с исполнителем: @{freelancer['username'] or 'не указан'}",
         parse_mode='HTML'
     )
@@ -866,8 +865,9 @@ async def accept_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
                  f"📋 <b>Порядок работы:</b>\n"
                  f"1. Выполните работу\n"
                  f"2. Нажмите 'Сдать работу' в разделе 'Мои отклики'\n"
-                 f"3. Заказчик проверит и оплатит\n"
-                 f"4. Вы получите средства автоматически\n\n"
+                 f"3. Заказчик оплатит заказ. Оплата будет заморожена на эскроу\n"
+                 f"4. Вы сдаете заказ.\n\n"
+                 f"5. Вы автоматически получите средства как только заказчик проверит работу.\n\n"
                  f"💬 Связаться с заказчиком: @{db.get_user(order['customer_id'])['username'] or 'не указан'}",
             parse_mode='HTML'
         )

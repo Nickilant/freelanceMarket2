@@ -87,7 +87,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "Платформа для размещения и поиска заказов на фриланс с оплатой в криптовалюте.\n\n"
         "🔐 Безопасная эскроу-система\n"
         "💎 Оплата в TON или USDT\n"
-        f"📊 Комиссия сервиса: {SERVICE_FEE}%\n\n"
         "Для начала выберите вашу роль:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
@@ -228,24 +227,6 @@ async def freelancer_rate(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data.clear()
     return ConversationHandler.END
 
-
-
-
-
-
-# [ПРОДОЛЖЕНИЕ В СЛЕДУЮЩЕЙ ЧАСТИ - ПЛАТЕЖИ И АДМИНКА]
-
-
-
-
-
-
-
-
-
-
-
-
 # ===== ДОПОЛНИТЕЛЬНЫЕ КОМАНДЫ =====
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показать профиль"""
@@ -297,7 +278,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 <b>Валюты:</b>
 💎 {', '.join(SUPPORTED_CURRENCIES)}
-📊 Комиссия: {SERVICE_FEE}%
 
 <b>Проблемы:</b>
 ⚠️ Кнопка "Проблема" → тикет админу
