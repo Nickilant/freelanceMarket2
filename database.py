@@ -134,7 +134,6 @@ class Database:
         
         conn.commit()
         conn.close()
-        logger.info("База данных инициализирована")
     
     # ===== ПОЛЬЗОВАТЕЛИ =====
     def create_user(self, user_id: int, username: str, role: str, **kwargs):

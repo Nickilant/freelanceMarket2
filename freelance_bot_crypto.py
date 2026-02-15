@@ -228,24 +228,6 @@ async def freelancer_rate(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data.clear()
     return ConversationHandler.END
 
-
-
-
-
-
-# [ПРОДОЛЖЕНИЕ В СЛЕДУЮЩЕЙ ЧАСТИ - ПЛАТЕЖИ И АДМИНКА]
-
-
-
-
-
-
-
-
-
-
-
-
 # ===== ДОПОЛНИТЕЛЬНЫЕ КОМАНДЫ =====
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Показать профиль"""
