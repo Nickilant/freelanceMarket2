@@ -74,7 +74,6 @@ def format_order_info(order: Dict, show_fee: bool = False, detailed: bool = Fals
         freelancer_amount = calculate_freelancer_amount(budget)
         text += f"💰 Бюджет заказчика: {budget} {currency}\n"
         text += f"💵 Вы получите: {freelancer_amount} {currency}\n"
-        text += f"📊 Комиссия сервиса ({SERVICE_FEE}%): {fee} {currency}\n"
     else:
         text += f"💰 Бюджет: {budget} {currency}\n"
     
