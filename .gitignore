@@ -215,3 +215,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .idea/
+
+freelance_bot.db
+old\ version/
