@@ -23,9 +23,11 @@ def get_main_keyboard(user_role: str, user_id: int) -> ReplyKeyboardMarkup:
     
     if user_role in [UserRole.CUSTOMER.value, UserRole.BOTH.value]:
         keyboard.append(['📝 Создать заказ', '📋 Мои заказы'])
+        keyboard.append(['📢 Разместить вакансию', '📌 Мои вакансии'])
     
     if user_role in [UserRole.FREELANCER.value, UserRole.BOTH.value]:
         keyboard.append(['🔍 Найти заказы', '💼 Мои отклики'])
+        keyboard.append(['📢 Смотреть вакансии'])
     
     keyboard.append(['👤 Профиль', 'ℹ️ Помощь'])
     
