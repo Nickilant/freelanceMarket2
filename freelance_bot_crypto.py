@@ -37,6 +37,7 @@ from constants import (
     ORDER_TITLE, ORDER_DESCRIPTION, ORDER_BUDGET, ORDER_CATEGORY, ORDER_SUBCATEGORY,
     ORDER_CURRENCY, ORDER_DEADLINE, RESPONSE_DESCRIPTION, RESPONSE_PRICE, RESPONSE_TIMELINE,
     TICKET_DESCRIPTION, WORK_DELIVERY, REVIEW_COMMENT,
+    VACANCY_TITLE, VACANCY_DESCRIPTION, VACANCY_REQUIREMENTS, VACANCY_CONTACT,
     MAX_ACTIVE_RESPONSES, MAX_RESPONSES_PER_ORDER, CATEGORIES, ORDERS_PER_PAGE,
 )
 from cryptobot_api import crypto_bot
@@ -55,6 +56,13 @@ from handlers.orders import (
     revision_description, confirm_payout, rate_customer, dispute_order, ticket_description,
 )
 from handlers.payments import pay_order, check_payment
+
+from handlers.vacancies import (
+    create_vacancy_start, vacancy_title, vacancy_description, vacancy_requirements,
+    vacancy_contact, check_vacancy_payment, my_vacancies, my_vacancy_navigate,
+    browse_vacancies, browse_vacancy_navigate, respond_vacancy, respond_vacancy_text,
+    vacancy_responses, invite_vacancy_candidate, reject_vacancy_candidate, close_vacancy,
+)
 from handlers.admin import (
     admin_available_balance, admin_panel, admin_tickets, refund_ticket,
     payout_ticket, close_ticket, admin_balance, back_to_admin,
@@ -312,6 +320,12 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await my_orders(update, context)
     elif text == '🔍 Найти заказы':
         return await find_orders(update, context)
+    elif text == '📢 Разместить вакансию':
+        return await create_vacancy_start(update, context)
+    elif text == '📌 Мои вакансии':
+        return await my_vacancies(update, context)
+    elif text == '📢 Смотреть вакансии':
+        return await browse_vacancies(update, context)
     elif text == '💼 Мои отклики':
         return await my_responses(update, context)
     elif text == '👤 Профиль':
@@ -429,6 +443,25 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)]
     )
     
+    vacancy_create_handler = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex('^📢 Разместить вакансию$'), create_vacancy_start)],
+        states={
+            VACANCY_TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, vacancy_title)],
+            VACANCY_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, vacancy_description)],
+            VACANCY_REQUIREMENTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, vacancy_requirements)],
+            VACANCY_CONTACT: [MessageHandler(filters.TEXT & ~filters.COMMAND, vacancy_contact)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+
+    vacancy_response_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(respond_vacancy, pattern='^respond_vacancy_')],
+        states={
+            VACANCY_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, respond_vacancy_text)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+
     # ConversationHandler для отклика
     response_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(respond_to_order, pattern='^respond_order_')],
@@ -469,6 +502,8 @@ def main():
     # Добавляем обработчики
     application.add_handler(registration_handler)
     application.add_handler(create_order_handler)
+    application.add_handler(vacancy_create_handler)
+    application.add_handler(vacancy_response_handler)
     application.add_handler(response_handler)
     application.add_handler(deliver_work_handler)
     application.add_handler(revision_handler)
@@ -494,6 +529,14 @@ def main():
     # Кнопки назад
     application.add_handler(CallbackQueryHandler(back_to_my_responses, pattern='^back_to_my_responses'))
     application.add_handler(CallbackQueryHandler(back_to_admin, pattern='^back_to_admin'))
+
+    application.add_handler(CallbackQueryHandler(check_vacancy_payment, pattern='^check_vacancy_payment_'))
+    application.add_handler(CallbackQueryHandler(my_vacancy_navigate, pattern='^my_vacancy_'))
+    application.add_handler(CallbackQueryHandler(browse_vacancy_navigate, pattern='^browse_vacancy_'))
+    application.add_handler(CallbackQueryHandler(vacancy_responses, pattern='^vacancy_responses_'))
+    application.add_handler(CallbackQueryHandler(invite_vacancy_candidate, pattern='^vacancy_invite_'))
+    application.add_handler(CallbackQueryHandler(reject_vacancy_candidate, pattern='^vacancy_reject_'))
+    application.add_handler(CallbackQueryHandler(close_vacancy, pattern='^close_vacancy_'))
 
     # Рейтинги (обновленные версии)
     application.add_handler(CallbackQueryHandler(rate_customer, pattern='^rate_customer_'))

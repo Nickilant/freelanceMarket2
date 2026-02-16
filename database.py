@@ -116,6 +116,40 @@ class Database:
             )
         ''')
         
+        # Таблица вакансий
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS vacancies (
+                vacancy_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                requirements TEXT NOT NULL,
+                contact TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'draft',
+                is_paid BOOLEAN NOT NULL DEFAULT 0,
+                payment_invoice_id INTEGER,
+                payment_status TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                closed_at TIMESTAMP,
+                FOREIGN KEY (customer_id) REFERENCES users (user_id)
+            )
+        ''')
+
+        # Таблица откликов на вакансии
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS vacancy_responses (
+                response_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vacancy_id INTEGER NOT NULL,
+                freelancer_id INTEGER NOT NULL,
+                cover_letter TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (vacancy_id) REFERENCES vacancies (vacancy_id),
+                FOREIGN KEY (freelancer_id) REFERENCES users (user_id),
+                UNIQUE(vacancy_id, freelancer_id)
+            )
+        ''')
+
         # Таблица отзывов
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS reviews (
@@ -498,6 +532,166 @@ class Database:
         
         conn.commit()
         conn.close()
+
+    # ===== ВАКАНСИИ =====
+    def create_vacancy(self, customer_id: int, title: str, description: str,
+                       requirements: str, contact: str) -> int:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO vacancies (customer_id, title, description, requirements, contact, status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (customer_id, title, description, requirements, contact, 'draft'))
+        vacancy_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return vacancy_id
+
+    def set_vacancy_payment(self, vacancy_id: int, invoice_id: int, payment_status: str):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE vacancies SET payment_invoice_id = ?, payment_status = ? WHERE vacancy_id = ?",
+            (invoice_id, payment_status, vacancy_id)
+        )
+        conn.commit()
+        conn.close()
+
+    def mark_vacancy_paid(self, vacancy_id: int):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE vacancies SET is_paid = 1, payment_status = ?, status = ? WHERE vacancy_id = ?",
+            ('paid', 'open', vacancy_id)
+        )
+        conn.commit()
+        conn.close()
+
+    def get_vacancy(self, vacancy_id: int) -> Optional[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vacancies WHERE vacancy_id = ?", (vacancy_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    def get_customer_vacancies(self, customer_id: int, limit: int = 20, offset: int = 0) -> List[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM vacancies
+            WHERE customer_id = ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        ''', (customer_id, limit, offset))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+    def count_customer_vacancies(self, customer_id: int) -> int:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM vacancies WHERE customer_id = ?", (customer_id,))
+        count = cursor.fetchone()['count']
+        conn.close()
+        return count
+
+    def get_open_vacancies(self, limit: int = 20, offset: int = 0) -> List[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM vacancies
+            WHERE status = 'open' AND is_paid = 1
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        ''', (limit, offset))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+    def count_open_vacancies(self) -> int:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM vacancies WHERE status = 'open' AND is_paid = 1")
+        count = cursor.fetchone()['count']
+        conn.close()
+        return count
+
+    def close_vacancy(self, vacancy_id: int):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE vacancies SET status = ?, closed_at = CURRENT_TIMESTAMP WHERE vacancy_id = ?",
+            ('closed', vacancy_id)
+        )
+        conn.commit()
+        conn.close()
+
+    def create_vacancy_response(self, vacancy_id: int, freelancer_id: int, cover_letter: str) -> Optional[int]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO vacancy_responses (vacancy_id, freelancer_id, cover_letter, status)
+                VALUES (?, ?, ?, ?)
+            ''', (vacancy_id, freelancer_id, cover_letter, 'pending'))
+            response_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            return response_id
+        except sqlite3.IntegrityError:
+            conn.close()
+            return None
+
+    def get_vacancy_response(self, response_id: int) -> Optional[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vacancy_responses WHERE response_id = ?", (response_id,))
+        row = cursor.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
+    def get_vacancy_responses(self, vacancy_id: int) -> List[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM vacancy_responses
+            WHERE vacancy_id = ?
+            ORDER BY created_at ASC
+        ''', (vacancy_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+    def get_vacancy_responses_by_status(self, vacancy_id: int, status: str) -> List[Dict]:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM vacancy_responses
+            WHERE vacancy_id = ? AND status = ?
+        ''', (vacancy_id, status))
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+    def count_vacancy_responses(self, vacancy_id: int) -> int:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM vacancy_responses WHERE vacancy_id = ?", (vacancy_id,))
+        count = cursor.fetchone()['count']
+        conn.close()
+        return count
+
+    def update_vacancy_response_status(self, response_id: int, status: str):
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE vacancy_responses SET status = ? WHERE response_id = ?",
+            (status, response_id)
+        )
+        conn.commit()
+        conn.close()
+
 
 # Инициализация БД
 db = Database()
